@@ -1,0 +1,153 @@
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <strings.h>
+
+#define ELEM_HASH 10
+
+
+typedef struct HashTable {
+  int num_elements;       
+  int buckets_vacios;     
+  int* keys;              
+  char** values;          
+} HashTable_t;
+
+
+
+HashTable_t *crearHash(int num_elements);
+int destruirHash(HashTable_t **hashTablePP);
+int insertar(HashTable_t *hashTableP, int key, char *value);
+int imprimir(HashTable_t *hashTableP);
+
+
+int main()
+{
+  HashTable_t *mi_tablaP = NULL;
+  
+  mi_tablaP = crearHash(ELEM_HASH);
+
+  insertar(mi_tablaP, 19100, "Item a");
+  insertar(mi_tablaP, 19200, "Item X"); // Este va a colisionar con el elemento anterior
+  insertar(mi_tablaP, 18401, "Item b"); // Este va a colisionar con el elemento anterior
+  insertar(mi_tablaP, 10002, "Item c"); // Este tambien :(
+  insertar(mi_tablaP, 15554, "Item d");
+  insertar(mi_tablaP, 14955, "Item e");
+  insertar(mi_tablaP, 10095, "Item f");
+
+  imprimir(mi_tablaP);
+
+  destruirHash(&mi_tablaP);
+
+  return 0;
+}
+
+HashTable_t *crearHash(int num_elements)
+{
+  HashTable_t *temp_tablaP = NULL;
+
+  temp_tablaP = malloc(sizeof(HashTable_t));
+  if (temp_tablaP == NULL) {
+    return NULL;
+  }
+  temp_tablaP->num_elements = num_elements;
+  temp_tablaP->buckets_vacios = num_elements;
+  temp_tablaP->keys = calloc(num_elements, sizeof(int));
+  if (temp_tablaP->keys== NULL) {
+    destruirHash(&temp_tablaP);
+    return NULL;
+  }
+
+  temp_tablaP->values = calloc(num_elements, sizeof(char *));
+  if (temp_tablaP->values == NULL) {
+    destruirHash(&temp_tablaP);
+    return NULL;
+  }
+
+  return temp_tablaP;
+}
+
+
+int destruirHash(HashTable_t **hashTablePP)
+{
+  int i;
+  int num_elements;
+  if (hashTablePP == NULL || *hashTablePP == NULL) {
+    return 1;
+  }
+
+  num_elements = (*hashTablePP)->num_elements;
+  for (i=0; i<num_elements; i++) {
+    free((*hashTablePP)->values[i]);
+  }
+
+  free((*hashTablePP)->values);
+  free((*hashTablePP)->keys);
+  
+  free(*hashTablePP);
+  return 0;
+}
+
+
+int insertar(HashTable_t *hashTableP, int key, char *value)
+{
+  int index;
+
+  if (hashTableP == NULL) {
+    return 1;
+  }
+
+  
+  if (hashTableP->buckets_vacios <=0) {
+    return 1;
+  }
+  
+  index = key % hashTableP->num_elements;
+
+  if (hashTableP->values[index] == NULL) {
+    hashTableP->keys[index] = key;
+    hashTableP->values[index] = strdup(value);
+    hashTableP->buckets_vacios --;
+  }
+
+  else {
+    int rehash_index = index;
+
+    for (;;) {
+      rehash_index = (rehash_index+1) % hashTableP->num_elements;
+
+      if (hashTableP->values[rehash_index] == NULL) {
+        hashTableP->keys[rehash_index] = key;
+        hashTableP->values[rehash_index] = strdup(value);
+        hashTableP->buckets_vacios --;
+        break;
+      }
+    }
+  }
+
+  return 0;
+}
+int imprimir(HashTable_t *hashTableP) 
+{
+  int i;
+  int num_elem;
+
+  
+  if (hashTableP == NULL) {
+    return 1;
+  }
+
+  num_elem = hashTableP->num_elements;
+
+  printf("Index \t\t Key \t\t Value\n");
+  for (i=0; i<num_elem; i++) {
+    if (hashTableP->values[i] == NULL) {
+      printf("%d \n", i);
+    }
+    else {
+      printf("%d \t\t %d \t\t %s\n", i, hashTableP->keys[i], hashTableP->values[i]);
+    }
+  }
+
+  return 0;
+}
